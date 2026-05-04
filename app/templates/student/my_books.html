@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}My Books — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>My <span class="highlight">Books</span></h1>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('borrows')">Active Borrows</button>
+  <button class="tab" onclick="showTab('history')">History</button>
+  <button class="tab" onclick="showTab('reservations')">Reservations</button>
+</div>
+
+<div id="borrows" class="tab-content active">
+  <div class="table-container">
+    <table class="data-table">
+      <thead><tr><th>Book</th><th>Author</th><th>Borrowed</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for b in borrows if b.status == 'borrowed' %}
+        <tr class="{{ 'row-danger' if b.is_overdue() else '' }}">
+          <td><strong>{{ b.book.title }}</strong></td>
+          <td>{{ b.book.author }}</td>
+          <td>{{ b.borrow_date.strftime('%b %d, %Y') }}</td>
+          <td class="{{ 'text-danger' if b.is_overdue() else '' }}">
+            {{ b.due_date.strftime('%b %d, %Y') }}
+            {% if b.is_overdue() %}<br><small class="text-danger">{{ b.days_overdue() }} days overdue</small>{% endif %}
+          </td>
+          <td>
+            {% if b.is_overdue() %}<span class="badge badge-danger">Overdue</span>
+            {% else %}<span class="badge badge-success">Active</span>{% endif %}
+            <br><small>Renewals: {{ b.renewals }}/{{ b.max_renewals }}</small>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('student.renew_book', record_id=b.id) }}" style="display:inline">
+              <button class="btn btn-sm btn-outline" {% if not b.can_renew() %}disabled title="Max renewals reached"{% endif %}>Renew</button>
+            </form>
+            <form method="POST" action="{{ url_for('student.return_book', record_id=b.id) }}" style="display:inline">
+              <button class="btn btn-sm btn-primary" onclick="return confirm('Return this book?')">Return</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center empty-row">No active borrows</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="history" class="tab-content">
+  <div class="table-container">
+    <table class="data-table">
+      <thead><tr><th>Book</th><th>Borrowed</th><th>Returned</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for b in borrows if b.status == 'returned' %}
+        <tr>
+          <td><strong>{{ b.book.title }}</strong></td>
+          <td>{{ b.borrow_date.strftime('%b %d, %Y') }}</td>
+          <td>{{ b.return_date.strftime('%b %d, %Y') if b.return_date else '-' }}</td>
+          <td><span class="badge badge-muted">Returned</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center empty-row">No borrow history</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="reservations" class="tab-content">
+  <div class="table-container">
+    <table class="data-table">
+      <thead><tr><th>Book</th><th>Reserved</th><th>Expires</th><th>Queue</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for r in reservations %}
+        <tr>
+          <td><strong>{{ r.book.title }}</strong></td>
+          <td>{{ r.reserved_date.strftime('%b %d, %Y') }}</td>
+          <td>{{ r.expiry_date.strftime('%b %d, %Y') }}</td>
+          <td>#{{ r.queue_position }}</td>
+          <td>
+            {% if r.status == 'ready' %}<span class="badge badge-success">Ready to Borrow!</span>
+            {% elif r.status == 'pending' %}<span class="badge badge-gold">Pending</span>
+            {% else %}<span class="badge badge-muted">{{ r.status.title() }}</span>{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center empty-row">No reservations</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+{% endblock %}

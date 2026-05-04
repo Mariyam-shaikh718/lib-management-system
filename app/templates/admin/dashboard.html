@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Admin <span class="highlight">Dashboard</span></h1>
+  <p>Library analytics and management overview</p>
+</div>
+<div class="stats-grid">
+  <div class="stat-card accent-blue"><div class="stat-icon"><i class="fas fa-books"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ total_books }}</div><div class="stat-label">Total Books</div></div></div>
+  <div class="stat-card accent-green"><div class="stat-icon"><i class="fas fa-users"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ total_members }}</div><div class="stat-label">Members</div></div></div>
+  <div class="stat-card accent-gold"><div class="stat-icon"><i class="fas fa-book-reader"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ active_borrows }}</div><div class="stat-label">Active Borrows</div></div></div>
+  <div class="stat-card accent-red"><div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ overdue_count }}</div><div class="stat-label">Overdue</div></div></div>
+  <div class="stat-card accent-orange"><div class="stat-icon"><i class="fas fa-coins"></i></div>
+    <div class="stat-info"><div class="stat-number">PKR {{ "%.0f"|format(total_fines) }}</div><div class="stat-label">Pending Fines</div></div></div>
+</div>
+
+<!-- Quick Issue Book -->
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-hand-holding-box"></i> Quick Issue Book</h3></div>
+  <form method="POST" action="{{ url_for('admin.issue_book') }}" class="quick-form">
+    <div class="form-row">
+      <div class="form-group flex-1">
+        <label>Member ID</label>
+        <input type="text" name="member_id" placeholder="e.g. MEM001234" required>
+      </div>
+      <div class="form-group flex-1">
+        <label>Book ID</label>
+        <input type="number" name="book_id" placeholder="Book ID number" required>
+      </div>
+      <button type="submit" class="btn btn-primary self-end">Issue Book</button>
+    </div>
+  </form>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Monthly Chart -->
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Monthly Borrows</h3></div>
+    <div class="chart-container">
+      <canvas id="borrowChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Popular Books -->
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-trophy"></i> Popular Books</h3></div>
+    {% for book in popular_books %}
+    <div class="book-row">
+      <div class="rank-badge">{{ loop.index }}</div>
+      <div class="book-info-mini">
+        <div class="book-title-mini">{{ book.title }}</div>
+        <div class="book-author-mini">{{ book.author }}</div>
+      </div>
+      <div class="borrow-count"><i class="fas fa-book-reader"></i> {{ book.borrow_count }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card mt-4">
+  <div class="card-header"><h3><i class="fas fa-clock-rotate-left"></i> Recent Activity</h3>
+    <a href="{{ url_for('admin.audit') }}" class="btn btn-sm btn-outline">View All</a>
+  </div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead><tr><th>User</th><th>Action</th><th>Details</th><th>Time</th></tr></thead>
+      <tbody>
+        {% for log in recent_activity %}
+        <tr>
+          <td>{{ log.user.name if log.user else 'System' }}</td>
+          <td><span class="action-badge">{{ log.action }}</span></td>
+          <td>{{ log.description or '-' }}</td>
+          <td>{{ log.timestamp.strftime('%b %d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const monthlyData = {{ monthly_data | tojson }};
+const ctx = document.getElementById('borrowChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [{
+      label: 'Books Borrowed',
+      data: monthlyData.map(d => d.count),
+      backgroundColor: 'rgba(212, 175, 55, 0.6)',
+      borderColor: 'rgba(212, 175, 55, 1)',
+      borderWidth: 2, borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#c8d6e5' } } },
+    scales: {
+      x: { ticks: { color: '#8899aa' }, grid: { color: '#1e2d3d' } },
+      y: { ticks: { color: '#8899aa' }, grid: { color: '#1e2d3d' } }
+    }
+  }
+});
+</script>
+{% endblock %}

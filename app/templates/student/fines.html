@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Fines — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>My <span class="highlight">Fines</span></h1>
+</div>
+{% set unpaid = fines | selectattr('paid', 'false') | list %}
+{% set total_due = unpaid | sum(attribute='amount') %}
+{% if total_due > 0 %}
+<div class="fine-summary-card">
+  <div><i class="fas fa-receipt"></i><span>Total Due</span></div>
+  <div class="fine-total">PKR {{ "%.2f"|format(total_due) }}</div>
+</div>
+{% endif %}
+<div class="table-container">
+  <table class="data-table">
+    <thead><tr><th>Book</th><th>Reason</th><th>Amount</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for f in fines %}
+      <tr>
+        <td>{{ f.borrow.book.title if f.borrow else 'N/A' }}</td>
+        <td>{{ f.reason }}</td>
+        <td class="{{ 'text-danger' if not f.paid else 'text-success' }}">PKR {{ "%.2f"|format(f.amount) }}</td>
+        <td>{{ f.issued_date.strftime('%b %d, %Y') }}</td>
+        <td>
+          {% if f.paid %}<span class="badge badge-success">Paid</span>
+          {% else %}<span class="badge badge-danger">Unpaid</span>{% endif %}
+        </td>
+        <td>
+          {% if not f.paid %}
+          <button class="btn btn-sm btn-primary" onclick="openPayModal({{ f.id }}, {{ f.amount }})">Pay Now</button>
+          {% else %}
+          <span class="text-muted">{{ f.paid_date.strftime('%b %d') if f.paid_date else '' }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center empty-row">No fines on record</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="payModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><h3>Pay Fine</h3><button onclick="closePayModal()">×</button></div>
+    <div class="modal-body">
+      <p>Amount: <strong id="fineAmount"></strong></p>
+      <form method="POST" id="payForm">
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select name="method" class="filter-select" style="width:100%">
+            <option value="cash">Cash</option>
+            <option value="card">Debit/Credit Card</option>
+            <option value="online">Online Transfer</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Confirm Payment</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function openPayModal(fineId, amount) {
+  document.getElementById('fineAmount').textContent = 'PKR ' + amount.toFixed(2);
+  document.getElementById('payForm').action = '/student/pay-fine/' + fineId;
+  document.getElementById('payModal').style.display = 'flex';
+}
+function closePayModal() { document.getElementById('payModal').style.display = 'none'; }
+</script>
+{% endblock %}

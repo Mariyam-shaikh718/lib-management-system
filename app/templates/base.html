@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}LibraryOS{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <i class="fas fa-book-open"></i>
+      <span>LibraryOS</span>
+    </div>
+    <nav class="sidebar-nav">
+      {% if current_user.role in ['admin','staff'] %}
+      <div class="nav-group">
+        <span class="nav-label">Admin</span>
+        <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-pie"></i><span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('admin.books') }}" class="nav-link {% if request.endpoint == 'admin.books' %}active{% endif %}">
+          <i class="fas fa-books"></i><span>Books</span>
+        </a>
+        <a href="{{ url_for('admin.members') }}" class="nav-link {% if request.endpoint == 'admin.members' %}active{% endif %}">
+          <i class="fas fa-users"></i><span>Members</span>
+        </a>
+        <a href="{{ url_for('admin.reports') }}" class="nav-link {% if request.endpoint == 'admin.reports' %}active{% endif %}">
+          <i class="fas fa-file-chart-line"></i><span>Reports</span>
+        </a>
+        <a href="{{ url_for('admin.audit') }}" class="nav-link {% if request.endpoint == 'admin.audit' %}active{% endif %}">
+          <i class="fas fa-shield-check"></i><span>Audit Logs</span>
+        </a>
+      </div>
+      {% endif %}
+      <div class="nav-group">
+        <span class="nav-label">Library</span>
+        <a href="{{ url_for('student.dashboard') }}" class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
+          <i class="fas fa-home"></i><span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('student.books') }}" class="nav-link {% if request.endpoint == 'student.books' %}active{% endif %}">
+          <i class="fas fa-search"></i><span>Browse Books</span>
+        </a>
+        <a href="{{ url_for('student.my_books') }}" class="nav-link {% if request.endpoint == 'student.my_books' %}active{% endif %}">
+          <i class="fas fa-bookmark"></i><span>My Books</span>
+        </a>
+        <a href="{{ url_for('student.fines') }}" class="nav-link {% if request.endpoint == 'student.fines' %}active{% endif %}">
+          <i class="fas fa-receipt"></i><span>Fines</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ current_user.name[0].upper() }}</div>
+        <div>
+          <div class="user-name">{{ current_user.name }}</div>
+          <div class="user-role">{{ current_user.role.title() }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i></a>
+    </div>
+  </aside>
+  <!-- Main -->
+  <main class="main-content">
+    <div class="topbar">
+      <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <div class="topbar-right">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}{% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }}">{{ msg }} <button onclick="this.parentElement.remove()">×</button></div>
+          {% endfor %}{% endif %}
+        {% endwith %}
+        <span class="member-badge">{{ current_user.member_id }}</span>
+      </div>
+    </div>
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

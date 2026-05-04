@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Reports — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Library <span class="highlight">Reports</span></h1></div>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overdue')">Overdue Books</button>
+  <button class="tab" onclick="showTab('fines')">Fine Records</button>
+</div>
+<div id="overdue" class="tab-content active">
+  <h3 class="section-title">{{ overdue_records|length }} Overdue Borrow(s)</h3>
+  <div class="table-container">
+    <table class="data-table">
+      <thead><tr><th>Member</th><th>Book</th><th>Due Date</th><th>Days Overdue</th><th>Fine Due</th></tr></thead>
+      <tbody>
+        {% for b in overdue_records %}
+        <tr class="row-danger">
+          <td><strong>{{ b.user.name }}</strong><br><small>{{ b.user.member_id }}</small></td>
+          <td>{{ b.book.title }}</td>
+          <td class="text-danger">{{ b.due_date.strftime('%b %d, %Y') }}</td>
+          <td><span class="badge badge-danger">{{ b.days_overdue() }} days</span></td>
+          <td class="text-danger">PKR {{ "%.2f"|format(b.calculated_fine()) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center empty-row">No overdue books 🎉</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div id="fines" class="tab-content">
+  <h3 class="section-title">Fine Records</h3>
+  <div class="table-container">
+    <table class="data-table">
+      <thead><tr><th>Member</th><th>Book</th><th>Amount</th><th>Reason</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for f in all_fines %}
+        <tr>
+          <td>{{ f.user.name }}</td>
+          <td>{{ f.borrow.book.title if f.borrow else 'N/A' }}</td>
+          <td>PKR {{ "%.2f"|format(f.amount) }}</td>
+          <td>{{ f.reason }}</td>
+          <td>{{ f.issued_date.strftime('%b %d, %Y') }}</td>
+          <td>{% if f.paid %}<span class="badge badge-success">Paid</span>
+          {% else %}<span class="badge badge-danger">Unpaid</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center empty-row">No fine records</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>{% endblock %}

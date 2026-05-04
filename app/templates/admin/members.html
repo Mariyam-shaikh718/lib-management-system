@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Members — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Manage <span class="highlight">Members</span></h1></div>
+<form method="GET" class="search-form mb-4">
+  <div class="search-input-wrap"><i class="fas fa-search"></i>
+    <input type="text" name="q" value="{{ q }}" placeholder="Search members...">
+  </div>
+  <button type="submit" class="btn btn-primary">Search</button>
+</form>
+<div class="table-container">
+  <table class="data-table">
+    <thead><tr><th>Member ID</th><th>Name</th><th>Email</th><th>Joined</th><th>Active Borrows</th><th>Fines</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for m in members.items %}
+      <tr>
+        <td><code>{{ m.member_id }}</code></td>
+        <td>
+          <div class="member-cell">
+            <div class="user-avatar-sm">{{ m.name[0] }}</div>
+            <strong>{{ m.name }}</strong>
+          </div>
+        </td>
+        <td>{{ m.email }}</td>
+        <td>{{ m.joined_date.strftime('%b %d, %Y') }}</td>
+        <td>{{ m.get_active_borrows() }}/{{ m.max_books }}</td>
+        <td>
+          {% set fine = m.get_total_fines() %}
+          {% if fine > 0 %}<span class="text-danger">PKR {{ "%.2f"|format(fine) }}</span>
+          {% else %}<span class="text-success">None</span>{% endif %}
+        </td>
+        <td>
+          {% if m.is_active %}<span class="badge badge-success">Active</span>
+          {% else %}<span class="badge badge-danger">Suspended</span>{% endif %}
+        </td>
+        <td>
+          <form method="POST" action="{{ url_for('admin.toggle_member', user_id=m.id) }}" style="display:inline">
+            <button class="btn btn-sm {{ 'btn-danger' if m.is_active else 'btn-outline' }}">
+              {{ 'Suspend' if m.is_active else 'Activate' }}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if members.pages > 1 %}
+<div class="pagination">
+  {% if members.has_prev %}<a href="?page={{ members.prev_num }}&q={{ q }}" class="btn btn-outline">← Prev</a>{% endif %}
+  <span>Page {{ members.page }} of {{ members.pages }}</span>
+  {% if members.has_next %}<a href="?page={{ members.next_num }}&q={{ q }}" class="btn btn-outline">Next →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

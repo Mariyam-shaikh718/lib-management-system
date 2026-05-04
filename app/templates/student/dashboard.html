@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Welcome back, <span class="highlight">{{ current_user.name.split()[0] }}</span></h1>
+  <p>Here's your library overview for today.</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card accent-blue">
+    <div class="stat-icon"><i class="fas fa-book-reader"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ active_borrows|length }}</div><div class="stat-label">Books Borrowed</div></div>
+  </div>
+  <div class="stat-card accent-red">
+    <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ overdue|length }}</div><div class="stat-label">Overdue Books</div></div>
+  </div>
+  <div class="stat-card accent-gold">
+    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+    <div class="stat-info"><div class="stat-number">{{ reservations|length }}</div><div class="stat-label">Reservations</div></div>
+  </div>
+  <div class="stat-card accent-orange">
+    <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+    <div class="stat-info"><div class="stat-number">PKR {{ "%.0f"|format(total_fines) }}</div><div class="stat-label">Pending Fines</div></div>
+  </div>
+</div>
+
+{% if overdue %}
+<div class="alert-section">
+  <div class="alert alert-danger">
+    <i class="fas fa-exclamation-circle"></i>
+    <strong>Overdue Alert!</strong> You have {{ overdue|length }} overdue book(s). Return them to avoid additional fines.
+  </div>
+</div>
+{% endif %}
+
+<div class="dashboard-grid">
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-fire"></i> Popular Books</h3>
+      <a href="{{ url_for('student.books') }}" class="btn btn-sm btn-outline">View All</a>
+    </div>
+    <div class="book-list">
+      {% for book in popular_books %}
+      <div class="book-row">
+        <div class="book-cover-mini">{{ book.title[0] }}</div>
+        <div class="book-info-mini">
+          <div class="book-title-mini">{{ book.title }}</div>
+          <div class="book-author-mini">{{ book.author }}</div>
+        </div>
+        <div class="book-badge {{ 'badge-success' if book.is_available() else 'badge-danger' }}">
+          {{ 'Available' if book.is_available() else 'Unavailable' }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-bookmark"></i> Active Borrows</h3></div>
+    {% if active_borrows %}
+    <div class="borrow-list">
+      {% for borrow in active_borrows %}
+      <div class="borrow-row {{ 'overdue-row' if borrow.is_overdue() else '' }}">
+        <div class="borrow-book">{{ borrow.book.title }}</div>
+        <div class="borrow-due {{ 'text-danger' if borrow.is_overdue() else '' }}">
+          <i class="fas fa-calendar"></i>
+          Due: {{ borrow.due_date.strftime('%b %d') }}
+          {% if borrow.is_overdue() %}<span class="badge-danger"> Overdue</span>{% endif %}
+        </div>
+        <div class="borrow-actions">
+          <form method="POST" action="{{ url_for('student.renew_book', record_id=borrow.id) }}" style="display:inline">
+            <button class="btn btn-sm btn-outline" {% if not borrow.can_renew() %}disabled{% endif %}>Renew</button>
+          </form>
+          <form method="POST" action="{{ url_for('student.return_book', record_id=borrow.id) }}" style="display:inline">
+            <button class="btn btn-sm btn-primary">Return</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="fas fa-inbox"></i><p>No active borrows</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header"><h3><i class="fas fa-sparkles"></i> Recently Added</h3></div>
+  <div class="books-grid">
+    {% for book in recent_books %}
+    <div class="book-card">
+      <div class="book-cover" style="background: hsl({{ loop.index * 47 }}, 60%, 30%)">
+        <span>{{ book.title[:2].upper() }}</span>
+        {% if book.is_ebook %}<div class="ebook-badge"><i class="fas fa-tablet"></i></div>{% endif %}
+      </div>
+      <div class="book-details">
+        <div class="book-title">{{ book.title }}</div>
+        <div class="book-author">{{ book.author }}</div>
+        <div class="book-genre">{{ book.genre }}</div>
+        <div class="book-footer">
+          <span class="{{ 'available' if book.is_available() else 'unavailable' }}">
+            {{ book.available_copies }}/{{ book.total_copies }} available
+          </span>
+          {% if book.is_available() %}
+          <form method="POST" action="{{ url_for('student.borrow_book', book_id=book.id) }}">
+            <button class="btn btn-sm btn-primary">Borrow</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('student.reserve_book', book_id=book.id) }}">
+            <button class="btn btn-sm btn-outline">Reserve</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

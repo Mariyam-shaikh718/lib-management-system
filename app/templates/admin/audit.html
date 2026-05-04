@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Audit <span class="highlight">Logs</span></h1></div>
+<div class="table-container">
+  <table class="data-table">
+    <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Target</th><th>Description</th><th>IP</th></tr></thead>
+    <tbody>
+      {% for log in logs.items %}
+      <tr>
+        <td>{{ log.timestamp.strftime('%b %d %H:%M:%S') }}</td>
+        <td>{{ log.user.name if log.user else 'System' }}</td>
+        <td><span class="action-badge">{{ log.action }}</span></td>
+        <td>{{ log.target_type or '-' }} {% if log.target_id %}#{{ log.target_id }}{% endif %}</td>
+        <td>{{ log.description or '-' }}</td>
+        <td><code>{{ log.ip_address or '-' }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if logs.pages > 1 %}
+<div class="pagination">
+  {% if logs.has_prev %}<a href="?page={{ logs.prev_num }}" class="btn btn-outline">← Prev</a>{% endif %}
+  <span>Page {{ logs.page }} of {{ logs.pages }}</span>
+  {% if logs.has_next %}<a href="?page={{ logs.next_num }}" class="btn btn-outline">Next →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

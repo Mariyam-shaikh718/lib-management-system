@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Browse Books — LibraryOS{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Browse <span class="highlight">Books</span></h1>
+  <p>Search and discover from our collection</p>
+</div>
+<div class="search-bar-container">
+  <form method="GET" class="search-form">
+    <div class="search-input-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by title, author, or ISBN...">
+    </div>
+    <select name="genre" class="filter-select">
+      <option value="">All Genres</option>
+      {% for cat in categories %}
+      <option value="{{ cat.name }}" {% if genre == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if q or genre %}<a href="{{ url_for('student.books') }}" class="btn btn-outline">Clear</a>{% endif %}
+  </form>
+</div>
+<div class="results-info">
+  Showing {{ books.total }} book(s)
+  {% if q %} for "<strong>{{ q }}</strong>"{% endif %}
+  {% if genre %} in <strong>{{ genre }}</strong>{% endif %}
+</div>
+<div class="books-grid books-grid-lg">
+  {% for book in books.items %}
+  <div class="book-card">
+    <div class="book-cover" style="background: hsl({{ (loop.index * 53 + 180) % 360 }}, 50%, 28%)">
+      <span>{{ book.title[:2].upper() }}</span>
+      {% if book.is_ebook %}<div class="ebook-badge"><i class="fas fa-tablet"></i> eBook</div>{% endif %}
+      {% if not book.is_available() %}<div class="unavailable-overlay">Unavailable</div>{% endif %}
+    </div>
+    <div class="book-details">
+      <div class="book-title">{{ book.title }}</div>
+      <div class="book-author"><i class="fas fa-user-pen"></i> {{ book.author }}</div>
+      <div class="book-genre"><i class="fas fa-tag"></i> {{ book.genre }}</div>
+      <div class="book-copies">{{ book.available_copies }}/{{ book.total_copies }} copies available</div>
+      {% if book.description %}<p class="book-desc">{{ book.description[:80] }}...</p>{% endif %}
+      <div class="book-footer">
+        {% if book.is_available() %}
+        <form method="POST" action="{{ url_for('student.borrow_book', book_id=book.id) }}">
+          <button class="btn btn-primary btn-block">Borrow Now</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('student.reserve_book', book_id=book.id) }}">
+          <button class="btn btn-outline btn-block">Reserve</button>
+        </form>
+        {% endif %}
+        {% if book.is_ebook and book.ebook_url %}
+        <a href="{{ book.ebook_url }}" target="_blank" class="btn btn-sm btn-ghost mt-1">
+          <i class="fas fa-book-open"></i> Read Online
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state full-width">
+    <i class="fas fa-search-minus"></i>
+    <p>No books found. Try a different search.</p>
+  </div>
+  {% endfor %}
+</div>
+<!-- Pagination -->
+{% if books.pages > 1 %}
+<div class="pagination">
+  {% if books.has_prev %}<a href="?page={{ books.prev_num }}&q={{ q }}&genre={{ genre }}" class="btn btn-outline">← Prev</a>{% endif %}
+  <span>Page {{ books.page }} of {{ books.pages }}</span>
+  {% if books.has_next %}<a href="?page={{ books.next_num }}&q={{ q }}&genre={{ genre }}" class="btn btn-outline">Next →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
